@@ -1,4 +1,4 @@
-### Trading account logbook
+### Trading account logbook v1
 
 # (methods that are not intended to be called by user do not have docstrings)
 
