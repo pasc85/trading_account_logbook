@@ -11,6 +11,7 @@ import math
 import matplotlib.pyplot as plt
 import pickle
 import copy
+import os
 
 
 
@@ -406,6 +407,9 @@ def backup():
     '''
     ta = pickle.load(open(ta_fname,'rb'))
     d = pd.Timestamp('now').strftime("%y-%m-%d")
+    if not os.path.isdir('./backups'):
+        os.mkdir('./backups')
+        print('Created folder for backups.')
     name = './backups/ta_' + d
     pickle.dump(ta, open( name + '.p', 'wb' ) )
     writer = pd.ExcelWriter( name + '.xlsx', engine='xlsxwriter')
