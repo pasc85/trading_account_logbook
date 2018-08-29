@@ -1,3 +1,4 @@
 *.p
 .ipynb_checkpoints
-backups/*
+backups/*.p
+backups/*.xlsx
