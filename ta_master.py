@@ -410,13 +410,55 @@ def backup():
     if not os.path.isdir('./backups'):
         os.mkdir('./backups')
         print('Created folder for backups.')
-    name = './backups/ta_' + d
+    name = './backups/' + ta_fname.split('_')[0] + '_' + d
     pickle.dump(ta, open( name + '.p', 'wb' ) )
     writer = pd.ExcelWriter( name + '.xlsx', engine='xlsxwriter')
     ta = shr_values(all_shares=True, comments=True, date_as_string=True)
     ta.to_excel(writer, sheet_name='Trading Account ' + d)
     writer.save()
 
+
+def account_name(*acct_name):
+    '''Display current account name, switch to others, or create new one.
+
+    Optional arguments:
+    acct_name -- name of account (string) to switch to (if name exists)
+                                    or to create (if name does not exit).
+
+    Note:
+    Return list of existing accounts with active/current
+                                    one in the first position.
+    '''
+    try:
+        l = pickle.load(open('account_names.p','rb'))
+    except FileNotFoundError:
+        print('No file with account names found. Created new one')
+        if acct_name:
+            l = [acct_name[0]]
+            print('with given account name, '+l[0]+'.')
+        else:
+            l = ['ta']
+            print('with default account name, ta.')
+        pickle.dump(l, open('account_names.p', 'wb' ) )
+    else:
+        if acct_name:
+            name = acct_name[0]
+            if name in l:
+                l.remove(name)
+                l.insert(0,name)
+                print('Switched to existing account, '+l[0]+'.')
+            else:
+                l.insert(0,name)
+                print('Switched to new account, '+l[0]+'.')
+            pickle.dump(l, open('account_names.p', 'wb' ) )
+    global ta_fname
+    ta_fname = l[0]+'_save.p'
+    if not os.path.isfile(ta_fname):
+        print('Warning: The account with the above name has not been')
+        print('initiated yet. Initiate using the method account_activity,')
+        print('passing the opening deposit amount as an argument. Calling')
+        print('any other methods before doing that will cause errors.')
+    return l
 
 
 ### 5: other tools
@@ -448,5 +490,5 @@ def bond_evaluation(coupon,years_to_maturity):
 s_fee = 10
 # zero_value to pad inactive shares or new ones
 zero_value = shares_value(0,0)
-# name of the trading account
-ta_fname = 'ta_save.p'
+# initialise (set name of trading account to be used)
+account_name()
