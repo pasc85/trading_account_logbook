@@ -1,4 +1,5 @@
 *.p
 .ipynb_checkpoints
 backups/*
-alpha-p_tables/*
+p_table.xlsx
+ta_dev.ipynb
