@@ -423,7 +423,7 @@ def account_name(*acct_name):
 
     Optional arguments:
     acct_name -- name of account (string) to switch to (if name exists)
-                                    or to create (if name does not exit).
+                                    or to create (if name does not exit)
 
     Note:
     Return list of existing accounts with active/current
@@ -482,6 +482,36 @@ def bond_evaluation(coupon,years_to_maturity):
         else:
             be.loc[i,'Price'] = 100.0/d * ( y + (1/(1+d))**m * (d-y) )
     return be
+
+
+def simulate_p(mu,sigma,begweek=12,endweek=52,**kwarg):
+    '''Simulate the evolution of shares with a given growth specified by a mean
+    and standard deviation. Produces a table that indicates how likely it is
+    that certain p values will achieved within a specified period.
+
+    Arguments:
+    mu -- mean weekly growth rate, can be found from historical data using the
+                                method find_mu_sigma
+    sigma -- standard deviation of weekly growth rates, can be found from
+                                historical data using the method find_mu_sigma
+
+    Optional arguments:
+    begweek -- first week of period in which share may be sold
+    endweek -- last week of period in which share may be sold
+
+    Keyword argument:
+    sharename -- name of the share for which the analysis is carried out
+
+    Note:
+    If sharename was given and if a file 'p_table.xlsx' is present in the
+    working directory, a row with the obtained p values will be added to it.
+    '''
+    pass
+    
+
+def find_mu_sigma (data):
+    '''Find mu and sigma for the method 'simulate_p' from historical data.'''
+    pass
 
 
 
