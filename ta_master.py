@@ -484,10 +484,11 @@ def bond_evaluation(coupon,years_to_maturity):
     return be
 
 
-def simulate_p(mu,sigma,begweek=12,endweek=52,**kwarg):
+def simulate_p(mu,sigma,begweek=12,endweek=52,**kwargs):
     '''Simulate the evolution of shares with a given growth specified by a mean
     and standard deviation. Produces a table that indicates how likely it is
-    that certain p values will achieved within a specified period.
+    that certain p values will achieved within a specified period. The week in
+    which each p value was achieved is indicated in the second row.
 
     Arguments:
     mu -- mean weekly growth rate, can be found from historical data using the
@@ -499,17 +500,52 @@ def simulate_p(mu,sigma,begweek=12,endweek=52,**kwarg):
     begweek -- first week of period in which share may be sold
     endweek -- last week of period in which share may be sold
 
-    Keyword argument:
-    sharename -- name of the share for which the analysis is carried out
+    Keyword arguments:
+    name -- name of the share for which the analysis is carried out
 
     Note:
-    If sharename was given and if a file 'p_table.xlsx' is present in the
+    If share name was given and if a file 'p_table.xlsx' is present in the
     working directory, a row with the obtained p values will be added to it.
+    Also note that neither dividends nor order fees are taken into account.
     '''
-    pass
-    
+    N = 100
+    n = endweek
+    b = begweek-1
+    maxima = np.zeros((2,N))
+    for k in range(N):
+        g = sigma*np.random.randn(n) + mu
+        v = np.cumprod(g)
+        p = np.zeros(n-b)
+        for i in range(b,n):
+            p[i-b] = math.log(v[i])*52/float(i+1)
+        maxima[0,k] = np.max(p)
+        maxima[1,k] = np.argmax(p)+b+1
+    ordered = np.sort(maxima[0,:])
+    cols = ['Date', 'Sharename','p_max','p_90','p_80','p_70','p_60','p_50',
+                                        'p_40','p_30','p_20','p_10','p_min']
+    data = ['' for i in range(13)]
+    df = pd.DataFrame([data,data],columns=cols,index=[0,1])
+    df = df.fillna('')
+    val = ordered[N-1]
+    idx = np.where(maxima[0,:]==val)
+    df.iloc[0,2] = '{:.4f}'.format(val)
+    df.iloc[1,2] = '{:d}'.format(int(maxima[1,idx]))
+    val = ordered[0]
+    idx = np.where(maxima[0,:]==val)
+    df.iloc[0,12] = '{:.4f}'.format(val)
+    df.iloc[1,12] = '{:d}'.format(int(maxima[1,idx]))
+    for k in range(9):
+        val = ordered[int((9-k)*N/10)]
+        idx = np.where(maxima[0,:]==val)
+        df.iloc[0,k+3] = '{:.4f}'.format(val)
+        df.iloc[1,k+3] = '{:d}'.format(int(maxima[1,idx]))
+    df.iloc[0,0] = pd.Timestamp('now').strftime("%y-%m-%d")
+    if 'name' in kwargs.keys():
+        df.iloc[0,1] = kwargs['name']
+    return df
 
-def find_mu_sigma (data):
+
+def find_mu_sigma(data):
     '''Find mu and sigma for the method 'simulate_p' from historical data.'''
     pass
 
