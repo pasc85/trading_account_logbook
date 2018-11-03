@@ -432,7 +432,7 @@ def account_name(*acct_name):
     try:
         l = pickle.load(open('account_names.p','rb'))
     except FileNotFoundError:
-        print('No file with account names found. Created new one')
+        print('No file with account names found. Created new one.')
         if acct_name:
             l = [acct_name[0]]
             print('with given account name, '+l[0]+'.')
@@ -556,9 +556,34 @@ def simulate_p(mu,sigma,begweek=12,endweek=52,**kwargs):
     return df
 
 
-def find_mu_sigma(data):
-    '''Find mu and sigma for the method 'simulate_p' from historical data.'''
-    pass
+def find_mu_sigma(data = []):
+    '''Find mu and sigma for the method 'simulate_p' from a data column of
+    weekly share prices. This data can be passed as an argument or must be
+    saved in a file called 'data.csv' in the working directory. In the latter
+    case, the data will be taken from a column called 'Close'.
+
+    Optional arguments:
+    data -- list of weekly stock prices
+    '''
+    if data:
+        v = data
+    else:
+        try:
+            d = pd.read_csv('data.csv')
+        except FileNotFoundError:
+            print('File data.csv not found, return NaN.')
+            return [np.nan,np.nan]
+        else:
+            d = d.dropna(how='any')
+            d = d.reset_index()
+            v = d.Close
+    l = []
+    for k in range(1,len(v)):
+        l.append(float(v[k])/float(v[k-1]))
+    l = np.asarray(l)
+    mu = l.mean()
+    sigma = l.std()
+    return [mu,sigma]
 
 
 
