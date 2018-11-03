@@ -508,7 +508,7 @@ def simulate_p(mu,sigma,begweek=12,endweek=52,**kwargs):
     working directory, a row with the obtained p values will be added to it.
     Also note that neither dividends nor order fees are taken into account.
     '''
-    N = 100
+    N = 10000
     n = endweek
     b = begweek-1
     maxima = np.zeros((2,N))
@@ -535,13 +535,24 @@ def simulate_p(mu,sigma,begweek=12,endweek=52,**kwargs):
     df.iloc[0,12] = '{:.4f}'.format(val)
     df.iloc[1,12] = '{:d}'.format(int(maxima[1,idx]))
     for k in range(9):
-        val = ordered[int((9-k)*N/10)]
+        val = ordered[int(((9-k)*N)/10)]
         idx = np.where(maxima[0,:]==val)
         df.iloc[0,k+3] = '{:.4f}'.format(val)
         df.iloc[1,k+3] = '{:d}'.format(int(maxima[1,idx]))
     df.iloc[0,0] = pd.Timestamp('now').strftime("%y-%m-%d")
     if 'name' in kwargs.keys():
         df.iloc[0,1] = kwargs['name']
+        if os.path.isfile('p_table.xlsx'):
+            old_p = pd.read_excel('p_table.xlsx')
+            new_p = old_p.append(df.iloc[0], ignore_index=True)
+            writer = pd.ExcelWriter('p_table.xlsx', engine='xlsxwriter')
+            new_p.to_excel(writer, sheet_name='Significance of p-values')
+            writer.save()
+        else:
+            writer = pd.ExcelWriter('p_table.xlsx', engine='xlsxwriter')
+            new_p = df.reindex(index=[df.index[0]])
+            new_p.to_excel(writer, sheet_name='Significance of p-values')
+            writer.save()
     return df
 
 
