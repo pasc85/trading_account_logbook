@@ -14,7 +14,6 @@ interest of p percent per year.
 
 A number of additional tools are provided, e.g. a method that computes bond
 prices. The significance of p values can be understood by analysing historic
-data, cf. the demo notebook. The testing notebook goes through a number of
-basic commands. The third provided notebook can be used for working on the
-account -- it contains a list of all callable functions (for which the
+data, cf. the demo notebook. The notebook ta_work can be used for working on
+the account -- it contains a list of all callable functions (for which the
 docstrings can be displayed).
