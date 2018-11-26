@@ -52,7 +52,7 @@ class shares_value:
     def value(self,**kwarg):
         if kwarg['mode']=='rel': return self.rel_val
         elif kwarg['mode']=='all':
-            return '{:.4f} ({:.2f},{:.2f})'.format(
+            return '{:.4f} ({:.2f}, {:.2f})'.format(
                                 self.rel_val,self.shr_val,self.div_val)
         elif kwarg['mode']=='shr': return self.shr_val
         elif kwarg['mode']=='eff': return (self.div_val + self.shr_val)
@@ -142,7 +142,6 @@ def update(**values):
     Note:
     Running this method without any arguments leaves the share values
         invariant and updates the time-dependent relative values only.
-    Best to always run update() before any of the other activites.
     '''
     if 'date' in values.keys(): now = values['date']
     else: now = pd.Timestamp('now')
