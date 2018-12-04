@@ -1,21 +1,17 @@
-### Trading account logbook
+# Trading account logbook
 
 # (methods that are not intended to be called by user do not have docstrings)
 
-
-
-### 0: packages
+# 0: packages
 import pandas as pd
 import numpy as np
 import math
-import matplotlib.pyplot as plt
 import pickle
 import copy
 import os
 
 
-
-### 1: shares_value object
+# 1: shares_value object
 class shares_value:
     # fixed parameters
     pur_pr = float(0)
@@ -25,15 +21,17 @@ class shares_value:
     div_val = float(0)
     rel_val = float(0)
 
-    def __init__(self,value,fee,**kwargs):
+    def __init__(self, value, fee, **kwargs):
         self.pur_pr = value + fee
-        if 'date' in kwargs.keys(): self.pur_date = kwargs['date']
-        else: self.pur_date = pd.Timestamp('now')
+        if 'date' in kwargs.keys():
+            self.pur_date = kwargs['date']
+        else:
+            self.pur_date = pd.Timestamp('now')
         self.shr_val = value
         self.div_val = 0
         self.rel_val = np.nan
 
-    def update_sv(self,**kwargs):
+    def update_sv(self, **kwargs):
         new_sh = copy.deepcopy(self)
         if 'value' in kwargs.keys():
             new_sh.shr_val = kwargs['value']
@@ -44,24 +42,27 @@ class shares_value:
         else:
             d = (pd.Timestamp('now') - new_sh.pur_date).days
         if d > 0:
-            new_sh.rel_val =( math.log(
-                ( new_sh.shr_val+new_sh.div_val-s_fee ) / new_sh.pur_pr )
-                * 365.0 / float(d) )
+            new_sh.rel_val = (math.log(
+                (new_sh.shr_val + new_sh.div_val - s_fee) / new_sh.pur_pr)
+                * 365.0 / float(d))
         return new_sh
 
-    def value(self,**kwarg):
-        if kwarg['mode']=='rel': return self.rel_val
-        elif kwarg['mode']=='all':
+    def value(self, **kwarg):
+        if kwarg['mode'] == 'rel':
+            return self.rel_val
+        elif kwarg['mode'] == 'all':
             return '{:.4f} ({:.2f}, {:.2f})'.format(
-                                self.rel_val,self.shr_val,self.div_val)
-        elif kwarg['mode']=='shr': return self.shr_val
-        elif kwarg['mode']=='eff': return (self.div_val + self.shr_val)
-        elif kwarg['mode']=='div': return self.div_val
+                                self.rel_val, self.shr_val, self.div_val)
+        elif kwarg['mode'] == 'shr':
+            return self.shr_val
+        elif kwarg['mode'] == 'eff':
+            return (self.div_val + self.shr_val)
+        elif kwarg['mode'] == 'div':
+            return self.div_val
 
 
-
-### 2: methods that modify the trading account dataframe
-def account_activity(increment,**kwargs):
+# 2: methods that modify the trading account dataframe
+def account_activity(increment, **kwargs):
     '''Modify account balance.
 
     Arguments:
@@ -77,31 +78,34 @@ def account_activity(increment,**kwargs):
     If no ta file found, a new one will be created with the given balance;
     the comment is 'Opening deposit' in this case.
     '''
-    if 'date' in kwargs.keys(): now = kwargs['date']
-    else: now = pd.Timestamp('now')
+    if 'date' in kwargs.keys():
+        now = kwargs['date']
+    else:
+        now = pd.Timestamp('now')
     try:
-        ta = pickle.load(open(ta_fname,'rb'))
+        ta = pickle.load(open(ta_fname, 'rb'))
     except FileNotFoundError:
-        cols = ['Date','Acct Bal','Comment']
-        ta = pd.DataFrame({'Date' : now,
-                       'Acct Bal' : increment,
-                        'Comment' : 'Opening deposit'}, index=[0],columns=cols)
-        pickle.dump(ta, open( ta_fname, 'wb' ) )
+        cols = ['Date', 'Acct Bal', 'Comment']
+        d = {'Date': now, 'Acct Bal': increment, 'Comment': 'Opening deposit'}
+        ta = pd.DataFrame(d, index=[0], columns=cols)
+        pickle.dump(ta, open(ta_fname, 'wb'))
         print('No trading account log file found, created new one.')
     else:
         ind = ta.index[-1] + 1
         ta = ta.append(ta.loc[ind-1], ignore_index=True)
-        ta.loc[ind,'Date'] = now
-        ta.loc[ind,'Acct Bal'] = ta.loc[ind,'Acct Bal'] + increment
+        ta.loc[ind, 'Date'] = now
+        ta.loc[ind, 'Acct Bal'] = ta.loc[ind, 'Acct Bal'] + increment
         if 'comment' in kwargs.keys():
-            ta.loc[ind,'Comment'] = kwargs['comment']
+            ta.loc[ind, 'Comment'] = kwargs['comment']
         else:
-            if increment < 0: ta.loc[ind,'Comment'] = 'Withdrawal'
-            else: ta.loc[ind,'Comment'] = 'Deposit'
-        pickle.dump(ta, open( ta_fname, 'wb' ) )
+            if increment < 0:
+                ta.loc[ind, 'Comment'] = 'Withdrawal'
+            else:
+                ta.loc[ind, 'Comment'] = 'Deposit'
+        pickle.dump(ta, open(ta_fname, 'wb'))
 
 
-def buy(name,value,fee,**kwargs):
+def buy(name, value, fee, **kwargs):
     '''Buy shares of a company.
 
     Arguments:
@@ -115,19 +119,21 @@ def buy(name,value,fee,**kwargs):
     if name in all_shares():
         print('Share name already exists. No changes made.')
     else:
-        if 'date' in kwargs.keys(): now = kwargs['date']
-        else: now = pd.Timestamp('now')
-        ta = pickle.load(open(ta_fname,'rb'))
+        if 'date' in kwargs.keys():
+            now = kwargs['date']
+        else:
+            now = pd.Timestamp('now')
+        ta = pickle.load(open(ta_fname, 'rb'))
         ind = ta.index[-1] + 1
         ta = ta.append(ta.loc[ind-1], ignore_index=True)
-        ta.loc[ind,'Date'] = now
-        ta.loc[ind,'Comment'] = 'Buy ' + name
-        ta.loc[ind,'Acct Bal'] = ta.loc[ind,'Acct Bal'] - value - fee
+        ta.loc[ind, 'Date'] = now
+        ta.loc[ind, 'Comment'] = 'Buy ' + name
+        ta.loc[ind, 'Acct Bal'] = ta.loc[ind, 'Acct Bal'] - value - fee
         cols = list(ta.columns) + [name]
         ta = ta.reindex(columns=cols)
-        ta.loc[:,name] = zero_value
-        ta.loc[ind,name] = shares_value(value,fee,date=now)
-        pickle.dump(ta, open( ta_fname, 'wb' ) )
+        ta.loc[:, name] = zero_value
+        ta.loc[ind, name] = shares_value(value, fee, date=now)
+        pickle.dump(ta, open(ta_fname, 'wb'))
 
 
 def update(**values):
@@ -143,25 +149,27 @@ def update(**values):
     Running this method without any arguments leaves the share values
         invariant and updates the time-dependent relative values only.
     '''
-    if 'date' in values.keys(): now = values['date']
-    else: now = pd.Timestamp('now')
+    if 'date' in values.keys():
+        now = values['date']
+    else:
+        now = pd.Timestamp('now')
     shares = active_shares()
-    ta = pickle.load(open(ta_fname,'rb'))
+    ta = pickle.load(open(ta_fname, 'rb'))
     ind = ta.index[-1] + 1
     ta = ta.append(ta.loc[ind - 1], ignore_index=True)
-    ta.loc[ind,'Date'] = now
-    ta.loc[ind,'Comment'] = 'Update'
+    ta.loc[ind, 'Date'] = now
+    ta.loc[ind, 'Comment'] = 'Update'
     for s in shares:
-        if (now-ta.loc[ind,s].pur_date).days > 0:
+        if (now-ta.loc[ind, s].pur_date).days > 0:
             if s in values.keys():
                 curr_val = values[s]
             else:
-                curr_val = ta.loc[ind,s].shr_val
-            ta.loc[ind,s] = ta.loc[ind,s].update_sv(value=curr_val,date=now)
-    pickle.dump(ta, open( ta_fname, 'wb' ) )
+                curr_val = ta.loc[ind, s].shr_val
+            ta.loc[ind, s] = ta.loc[ind, s].update_sv(value=curr_val, date=now)
+    pickle.dump(ta, open(ta_fname, 'wb'))
 
 
-def dividend(name,amount,**kwargs):
+def dividend(name, amount, **kwargs):
     '''Log a dividend that was paid.
 
     Arguments:
@@ -176,20 +184,22 @@ def dividend(name,amount,**kwargs):
     if name not in active_shares():
         print('Given share name is not an active share, no action taken.')
     else:
-        if 'date' in kwargs.keys(): now = kwargs['date']
-        else: now = pd.Timestamp('now')
-        ta = pickle.load(open(ta_fname,'rb'))
+        if 'date' in kwargs.keys():
+            now = kwargs['date']
+        else:
+            now = pd.Timestamp('now')
+        ta = pickle.load(open(ta_fname, 'rb'))
         ind = ta.index[-1] + 1
         ta = ta.append(ta.loc[ind - 1], ignore_index=True)
-        ta.loc[ind,'Date'] = now
-        ta.loc[ind,'Comment'] = 'Dividend ' + name
-        ta.loc[ind,'Acct Bal'] = ta.loc[ind,'Acct Bal'] + amount
-        ta.loc[ind,name] = ta.loc[ind,name].update_sv(
-                                    new_dividend=amount,date=now)
-        pickle.dump(ta, open( ta_fname, 'wb' ) )
+        ta.loc[ind, 'Date'] = now
+        ta.loc[ind, 'Comment'] = 'Dividend ' + name
+        ta.loc[ind, 'Acct Bal'] = ta.loc[ind, 'Acct Bal'] + amount
+        ta.loc[ind, name] = ta.loc[ind, name].update_sv(
+                                    new_dividend=amount, date=now)
+        pickle.dump(ta, open(ta_fname, 'wb'))
 
 
-def sell(name,amount,**kwargs):
+def sell(name, amount, **kwargs):
     '''Sell a share.
 
     Arguments:
@@ -209,26 +219,27 @@ def sell(name,amount,**kwargs):
     if name not in active_shares():
         print('Given share name is not an active share, no action taken.')
     else:
-        if 'date' in kwargs.keys(): now = kwargs['date']
-        else: now = pd.Timestamp('now')
-        ta = pickle.load(open(ta_fname,'rb'))
+        if 'date' in kwargs.keys():
+            now = kwargs['date']
+        else:
+            now = pd.Timestamp('now')
+        ta = pickle.load(open(ta_fname, 'rb'))
         ind = ta.index[-1] + 1
         ta = ta.append(ta.loc[ind - 1], ignore_index=True)
-        ta.loc[ind,'Date'] = now
-        ta.loc[ind,'Comment'] = 'Sell ' + name
-        ta.loc[ind,'Acct Bal'] = ta.loc[ind,'Acct Bal'] + amount
-        s = ta.loc[ind,name]
+        ta.loc[ind, 'Date'] = now
+        ta.loc[ind, 'Comment'] = 'Sell ' + name
+        ta.loc[ind, 'Acct Bal'] = ta.loc[ind, 'Acct Bal'] + amount
+        s = ta.loc[ind, name]
         pp = s.pur_pr
         d = now - s.pur_date
         ev = amount + s.div_val
         r = math.log(ev/pp)*365/(d.days)*100
-        ta.loc[ind,name] = zero_value
-        pickle.dump(ta, open( ta_fname, 'wb' ) )
+        ta.loc[ind, name] = zero_value
+        pickle.dump(ta, open(ta_fname, 'wb'))
         print(name + ' was sold with an overall return of {:.1f}%.'.format(r))
 
 
-
-### 3: methods that return a displayable dataframe
+# 3: methods that return a displayable dataframe
 def rel_values(**kwargs):
     '''Return dataframe with relative values as floats.
 
@@ -248,11 +259,11 @@ def rel_values(**kwargs):
     Interpretation: If the share was sold now, what interest rate (continuously
     compounded) would have led to the same profit/loss.
     '''
-    display_args = { 'all_shares' : False,
-                       'comments' : False,
-                       'acct_bal' : False,
-                 'date_as_string' : False,
-                           'mode' : 'rel'}
+    display_args = {'all_shares': False,
+                    'comments': False,
+                    'acct_bal': False,
+                    'date_as_string': False,
+                    'mode': 'rel'}
     for k in kwargs.keys():
         if k in display_args.keys():
             display_args[k] = kwargs[k]
@@ -277,11 +288,11 @@ def all_values(**kwargs):
     Note:
     The output string is of the form 'relative value (share value, dividends)'.
     '''
-    display_args = { 'all_shares' : False,
-                       'comments' : True,
-                       'acct_bal' : True,
-                 'date_as_string' : False,
-                           'mode' : 'all'}
+    display_args = {'all_shares': False,
+                    'comments': True,
+                    'acct_bal': True,
+                    'date_as_string': False,
+                    'mode': 'all'}
     for k in kwargs.keys():
         if k in display_args.keys():
             display_args[k] = kwargs[k]
@@ -303,11 +314,11 @@ def shr_values(**kwargs):
     date_as_string -- write dates as strings (default False)
     date_as_index -- set dates as index (default True)
     '''
-    display_args = { 'all_shares' : False,
-                       'comments' : False,
-                       'acct_bal' : True,
-                 'date_as_string' : False,
-                           'mode' : 'shr'}
+    display_args = {'all_shares': False,
+                    'comments': False,
+                    'acct_bal': True,
+                    'date_as_string': False,
+                    'mode': 'shr'}
     for k in kwargs.keys():
         if k in display_args.keys():
             display_args[k] = kwargs[k]
@@ -329,18 +340,17 @@ def convert_df(display_args):
     if display_args['acct_bal']:
             cols = ['Acct Bal'] + cols
     cols = ['Date'] + cols
-    ta = pickle.load(open(ta_fname,'rb'))
+    ta = pickle.load(open(ta_fname, 'rb'))
     for s in shares:
         for j in range(ta.shape[0]):
-            ta.loc[j,s] = ta.loc[j,s].value(mode=display_args['mode'])
+            ta.loc[j, s] = ta.loc[j, s].value(mode=display_args['mode'])
     if display_args['date_as_string']:
         for j in range(ta.shape[0]):
-            ta.loc[j,'Date'] = ta.loc[j,'Date'].strftime("%y-%m-%d")
+            ta.loc[j, 'Date'] = ta.loc[j, 'Date'].strftime("%y-%m-%d")
     return ta.reindex(columns=cols)
 
 
-
-### 4: other methods on the data frame
+# 4: other methods on the data frame
 def all_shares():
     '''Return list of all shares.'''
     return list_shares(mode='all')
@@ -352,16 +362,16 @@ def active_shares():
 
 
 def list_shares(**kwarg):
-    ta = pickle.load(open(ta_fname,'rb'))
+    ta = pickle.load(open(ta_fname, 'rb'))
     shares = list(ta.columns)
     shares.remove('Date')
     shares.remove('Acct Bal')
     shares.remove('Comment')
     ind = ta.index[-1]
-    if not ('mode','all') in kwarg.items():
+    if not ('mode', 'all') in kwarg.items():
         to_remove = []
         for s in shares:
-            if ta.loc[ind,s].shr_val==0:
+            if ta.loc[ind, s].shr_val == 0:
                 to_remove.append(s)
         for s in to_remove:
                 shares.remove(s)
@@ -375,9 +385,9 @@ def delete_last_row():
     Other changes have to be done manually.
     '''
     backup()
-    ta = pickle.load(open(ta_fname,'rb'))
+    ta = pickle.load(open(ta_fname, 'rb'))
     ta = ta.drop(ta.index[-1])
-    pickle.dump(ta, open( ta_fname, 'wb' ) )
+    pickle.dump(ta, open(ta_fname, 'wb'))
     print('Backed up trading account and deleted last row.')
 
 
@@ -388,15 +398,15 @@ def total_value():
     tvs = []
     for i in t.index:
         share_count = 0
-        sum = t.loc[i,'Acct Bal']
+        sum = t.loc[i, 'Acct Bal']
         for s in shares:
-            temp = t.loc[i,s]
-            if temp>0:
+            temp = t.loc[i, s]
+            if temp > 0:
                 sum = sum + temp
                 share_count = share_count + 1
-        tvs.append( sum - share_count * s_fee )
-    t = t.reindex(columns = ['Date','Total Value']).set_index('Date')
-    t.loc[:,'Total Value'] = tvs
+        tvs.append(sum - share_count * s_fee)
+    t = t.reindex(columns=['Date', 'Total Value']).set_index('Date')
+    t.loc[:, 'Total Value'] = tvs
     return t
 
 
@@ -404,14 +414,14 @@ def backup():
     '''Save timestamped dataframe as well as a spreadsheet with the full
     record of trading account activities in a separate folder.
     '''
-    ta = pickle.load(open(ta_fname,'rb'))
+    ta = pickle.load(open(ta_fname, 'rb'))
     d = pd.Timestamp('now').strftime("%y-%m-%d")
     if not os.path.isdir('./backups'):
         os.mkdir('./backups')
         print('Created folder for backups.')
     name = './backups/' + ta_fname.split('_')[0] + '_' + d
-    pickle.dump(ta, open( name + '.p', 'wb' ) )
-    writer = pd.ExcelWriter( name + '.xlsx', engine='xlsxwriter')
+    pickle.dump(ta, open(name + '.p', 'wb'))
+    writer = pd.ExcelWriter(name + '.xlsx', engine='xlsxwriter')
     ta = shr_values(all_shares=True, comments=True, date_as_string=True)
     ta.to_excel(writer, sheet_name='Trading Account ' + d)
     writer.save()
@@ -429,40 +439,39 @@ def account_name(*acct_name):
                                     one in the first position.
     '''
     try:
-        l = pickle.load(open('account_names.p','rb'))
+        names = pickle.load(open('account_names.p', 'rb'))
     except FileNotFoundError:
         print('No file with account names found. Created new one.')
         if acct_name:
-            l = [acct_name[0]]
-            print('with given account name, '+l[0]+'.')
+            names = [acct_name[0]]
+            print('with given account name, '+names[0]+'.')
         else:
-            l = ['ta']
+            names = ['ta']
             print('with default account name, ta.')
-        pickle.dump(l, open('account_names.p', 'wb' ) )
+        pickle.dump(names, open('account_names.p', 'wb'))
     else:
         if acct_name:
             name = acct_name[0]
-            if name in l:
-                l.remove(name)
-                l.insert(0,name)
-                print('Switched to existing account, '+l[0]+'.')
+            if name in names:
+                names.remove(name)
+                names.insert(0, name)
+                print('Switched to existing account, '+names[0]+'.')
             else:
-                l.insert(0,name)
-                print('Switched to new account, '+l[0]+'.')
-            pickle.dump(l, open('account_names.p', 'wb' ) )
+                names.insert(0, name)
+                print('Switched to new account, '+names[0]+'.')
+            pickle.dump(names, open('account_names.p', 'wb'))
     global ta_fname
-    ta_fname = l[0]+'_save.p'
+    ta_fname = names[0]+'_save.p'
     if not os.path.isfile(ta_fname):
         print('Warning: The account with the above name has not been')
         print('initiated yet. Initiate using the method account_activity,')
         print('passing the opening deposit amount as an argument. Calling')
         print('any other methods before doing that will cause errors.')
-    return l
+    return names
 
 
-
-### 5: other tools
-def bond_evaluation(coupon,years_to_maturity):
+# 5: other tools
+def bond_evaluation(coupon, years_to_maturity):
     '''Return table linking overall return rates to bond prices.
 
     Arguments:
@@ -471,19 +480,19 @@ def bond_evaluation(coupon,years_to_maturity):
     '''
     y = coupon*0.01
     m = years_to_maturity
-    drs = list(k*0.1 for k in range(-10,100,5))
-    be = pd.DataFrame({'Return (%)':drs, 'Price':1})
+    drs = list(k*0.1 for k in range(-10, 100, 5))
+    be = pd.DataFrame({'Return (%)': drs, 'Price': 1})
     be = be.set_index('Return (%)')
     for i in be.index:
         d = i*0.01
-        if i==0:
-            be.loc[i,'Price'] = 100 + m * 100 * y
+        if i == 0:
+            be.loc[i, 'Price'] = 100 + m * 100 * y
         else:
-            be.loc[i,'Price'] = 100.0/d * ( y + (1/(1+d))**m * (d-y) )
+            be.loc[i, 'Price'] = 100.0/d * (y + (1/(1+d))**m * (d-y))
     return be
 
 
-def simulate_p(mu,sigma,begweek=12,endweek=52,**kwargs):
+def simulate_p(mu, sigma, begweek=12, endweek=52, **kwargs):
     '''Simulate the evolution of shares with a given growth specified by a mean
     and standard deviation. Produces a table that indicates how likely it is
     that certain p values will achieved within a specified period. The week in
@@ -510,37 +519,37 @@ def simulate_p(mu,sigma,begweek=12,endweek=52,**kwargs):
     N = 10000
     n = endweek
     b = begweek-1
-    maxima = np.zeros((2,N))
+    maxima = np.zeros((2, N))
     for k in range(N):
         g = sigma*np.random.randn(n) + mu
         v = np.cumprod(g)
         p = np.zeros(n-b)
-        for i in range(b,n):
+        for i in range(b, n):
             p[i-b] = math.log(v[i])*52/float(i+1)
-        maxima[0,k] = np.max(p)
-        maxima[1,k] = np.argmax(p)+b+1
-    ordered = np.sort(maxima[0,:])
-    cols = ['Date', 'Sharename','p_max','p_90','p_80','p_70','p_60','p_50',
-                                        'p_40','p_30','p_20','p_10','p_min']
+        maxima[0, k] = np.max(p)
+        maxima[1, k] = np.argmax(p)+b+1
+    ordered = np.sort(maxima[0, :])
+    cols = ['Date', 'Sharename', 'p_max', 'p_90', 'p_80', 'p_70', 'p_60',
+            'p_50', 'p_40', 'p_30', 'p_20', 'p_10', 'p_min']
     data = ['' for i in range(13)]
-    df = pd.DataFrame([data,data],columns=cols,index=[0,1])
+    df = pd.DataFrame([data, data], columns=cols, index=[0, 1])
     df = df.fillna('')
     val = ordered[N-1]
-    idx = np.where(maxima[0,:]==val)
-    df.iloc[0,2] = '{:.4f}'.format(val)
-    df.iloc[1,2] = '{:d}'.format(int(maxima[1,idx]))
+    idx = np.where(maxima[0, :] == val)
+    df.iloc[0, 2] = '{:.4f}'.format(val)
+    df.iloc[1, 2] = '{:d}'.format(int(maxima[1, idx]))
     val = ordered[0]
-    idx = np.where(maxima[0,:]==val)
-    df.iloc[0,12] = '{:.4f}'.format(val)
-    df.iloc[1,12] = '{:d}'.format(int(maxima[1,idx]))
+    idx = np.where(maxima[0, :] == val)
+    df.iloc[0, 12] = '{:.4f}'.format(val)
+    df.iloc[1, 12] = '{:d}'.format(int(maxima[1, idx]))
     for k in range(9):
         val = ordered[int(((9-k)*N)/10)]
-        idx = np.where(maxima[0,:]==val)
-        df.iloc[0,k+3] = '{:.4f}'.format(val)
-        df.iloc[1,k+3] = '{:d}'.format(int(maxima[1,idx]))
-    df.iloc[0,0] = pd.Timestamp('now').strftime("%y-%m-%d")
+        idx = np.where(maxima[0, :] == val)
+        df.iloc[0, k+3] = '{:.4f}'.format(val)
+        df.iloc[1, k+3] = '{:d}'.format(int(maxima[1, idx]))
+    df.iloc[0, 0] = pd.Timestamp('now').strftime("%y-%m-%d")
     if 'name' in kwargs.keys():
-        df.iloc[0,1] = kwargs['name']
+        df.iloc[0, 1] = kwargs['name']
         if os.path.isfile('p_table.xlsx'):
             old_p = pd.read_excel('p_table.xlsx')
             new_p = old_p.append(df.iloc[0], ignore_index=True)
@@ -555,7 +564,7 @@ def simulate_p(mu,sigma,begweek=12,endweek=52,**kwargs):
     return df
 
 
-def find_mu_sigma(data = []):
+def find_mu_sigma(data=[]):
     '''Find mu and sigma for the method 'simulate_p' from a data column of
     weekly share prices. This data can be passed as an argument or must be
     saved in a file called 'data.csv' in the working directory. In the latter
@@ -571,26 +580,25 @@ def find_mu_sigma(data = []):
             d = pd.read_csv('data.csv')
         except FileNotFoundError:
             print('File data.csv not found, return NaN.')
-            return [np.nan,np.nan]
+            return [np.nan, np.nan]
         else:
             d = d.dropna(how='any')
             d = d.reset_index()
             v = d.Close
-    l = []
-    for k in range(1,len(v)):
-        l.append(float(v[k])/float(v[k-1]))
-    l = np.asarray(l)
-    mu = l.mean()
-    sigma = l.std()
-    return [mu,sigma]
+    growth_factors = []
+    for k in range(1, len(v)):
+        growth_factors.append(float(v[k])/float(v[k-1]))
+    growth_factors = np.asarray(growth_factors)
+    mu = growth_factors.mean()
+    sigma = growth_factors.std()
+    return [mu, sigma]
 
 
-
-### 6: constants
+# 6: constants
 # trading fee (approximate value that will be used to compute the relative
 # values -- exact fee will be implicitly logged when selling)
 s_fee = 10
 # zero_value to pad inactive shares or new ones
-zero_value = shares_value(0,0)
+zero_value = shares_value(0, 0)
 # initialise (set name of trading account to be used)
 account_name()
