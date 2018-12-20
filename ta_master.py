@@ -11,15 +11,8 @@ import copy
 import os
 
 
-# 1: shares_value object
-class shares_value:
-    # fixed parameters
-    pur_pr = float(0)
-    pur_date = pd.Timestamp('now')
-    # variable parameters
-    shr_val = float(0)
-    div_val = float(0)
-    rel_val = float(0)
+# 1: ShareValue object
+class ShareValue:
 
     def __init__(self, value, fee, **kwargs):
         self.pur_pr = value + fee
@@ -132,7 +125,7 @@ def buy(name, value, fee, **kwargs):
         cols = list(ta.columns) + [name]
         ta = ta.reindex(columns=cols)
         ta.loc[:, name] = zero_value
-        ta.loc[ind, name] = shares_value(value, fee, date=now)
+        ta.loc[ind, name] = ShareValue(value, fee, date=now)
         pickle.dump(ta, open(ta_fname, 'wb'))
 
 
@@ -599,6 +592,6 @@ def find_mu_sigma(data=[]):
 # values -- exact fee will be implicitly logged when selling)
 s_fee = 10
 # zero_value to pad inactive shares or new ones
-zero_value = shares_value(0, 0)
+zero_value = ShareValue(0, 0)
 # initialise (set name of trading account to be used)
 account_name()
