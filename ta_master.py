@@ -1,6 +1,5 @@
 # Trading account logbook
 
-# (methods that are not intended to be called by user do not have docstrings)
 
 # 0: packages
 import pandas as pd
