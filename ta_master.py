@@ -76,12 +76,12 @@ def account_activity(increment, **kwargs):
     else:
         now = pd.Timestamp('now')
     try:
-        ta = pickle.load(open(ta_fname, 'rb'))
+        ta = ta_read()
     except FileNotFoundError:
         cols = ['Date', 'Acct Bal', 'Comment']
         d = {'Date': now, 'Acct Bal': increment, 'Comment': 'Opening deposit'}
         ta = pd.DataFrame(d, index=[0], columns=cols)
-        pickle.dump(ta, open(ta_fname, 'wb'))
+        ta_write(ta)
         print('No trading account log file found, created new one.')
     else:
         ind = ta.index[-1] + 1
@@ -95,7 +95,7 @@ def account_activity(increment, **kwargs):
                 ta.loc[ind, 'Comment'] = 'Withdrawal'
             else:
                 ta.loc[ind, 'Comment'] = 'Deposit'
-        pickle.dump(ta, open(ta_fname, 'wb'))
+        ta_write(ta)
 
 
 def buy(name, value, fee, **kwargs):
@@ -116,7 +116,7 @@ def buy(name, value, fee, **kwargs):
             now = kwargs['date']
         else:
             now = pd.Timestamp('now')
-        ta = pickle.load(open(ta_fname, 'rb'))
+        ta = ta_read()
         ind = ta.index[-1] + 1
         ta = ta.append(ta.loc[ind-1], ignore_index=True)
         ta.loc[ind, 'Date'] = now
@@ -126,7 +126,7 @@ def buy(name, value, fee, **kwargs):
         ta = ta.reindex(columns=cols)
         ta.loc[:, name] = zero_value
         ta.loc[ind, name] = ShareValue(value, fee, date=now)
-        pickle.dump(ta, open(ta_fname, 'wb'))
+        ta_write(ta)
 
 
 def update(**values):
@@ -147,7 +147,7 @@ def update(**values):
     else:
         now = pd.Timestamp('now')
     shares = active_shares()
-    ta = pickle.load(open(ta_fname, 'rb'))
+    ta = ta_read()
     ind = ta.index[-1] + 1
     ta = ta.append(ta.loc[ind - 1], ignore_index=True)
     ta.loc[ind, 'Date'] = now
@@ -159,7 +159,7 @@ def update(**values):
             else:
                 curr_val = ta.loc[ind, s].shr_val
             ta.loc[ind, s] = ta.loc[ind, s].update_sv(value=curr_val, date=now)
-    pickle.dump(ta, open(ta_fname, 'wb'))
+    ta_write(ta)
 
 
 def dividend(name, amount, **kwargs):
@@ -181,7 +181,7 @@ def dividend(name, amount, **kwargs):
             now = kwargs['date']
         else:
             now = pd.Timestamp('now')
-        ta = pickle.load(open(ta_fname, 'rb'))
+        ta = ta_read()
         ind = ta.index[-1] + 1
         ta = ta.append(ta.loc[ind - 1], ignore_index=True)
         ta.loc[ind, 'Date'] = now
@@ -189,7 +189,7 @@ def dividend(name, amount, **kwargs):
         ta.loc[ind, 'Acct Bal'] = ta.loc[ind, 'Acct Bal'] + amount
         ta.loc[ind, name] = ta.loc[ind, name].update_sv(
                                     new_dividend=amount, date=now)
-        pickle.dump(ta, open(ta_fname, 'wb'))
+        ta_write(ta)
 
 
 def sell(name, amount, **kwargs):
@@ -216,7 +216,7 @@ def sell(name, amount, **kwargs):
             now = kwargs['date']
         else:
             now = pd.Timestamp('now')
-        ta = pickle.load(open(ta_fname, 'rb'))
+        ta = ta_read()
         ind = ta.index[-1] + 1
         ta = ta.append(ta.loc[ind - 1], ignore_index=True)
         ta.loc[ind, 'Date'] = now
@@ -228,7 +228,7 @@ def sell(name, amount, **kwargs):
         ev = amount + s.div_val
         r = math.log(ev/pp)*365/(d.days)*100
         ta.loc[ind, name] = zero_value
-        pickle.dump(ta, open(ta_fname, 'wb'))
+        ta_write(ta)
         print(name + ' was sold with an overall return of {:.1f}%.'.format(r))
 
 
@@ -333,7 +333,7 @@ def convert_df(display_args):
     if display_args['acct_bal']:
             cols = ['Acct Bal'] + cols
     cols = ['Date'] + cols
-    ta = pickle.load(open(ta_fname, 'rb'))
+    ta = ta_read()
     for s in shares:
         for j in range(ta.shape[0]):
             ta.loc[j, s] = ta.loc[j, s].value(mode=display_args['mode'])
@@ -355,7 +355,7 @@ def active_shares():
 
 
 def list_shares(**kwarg):
-    ta = pickle.load(open(ta_fname, 'rb'))
+    ta = ta_read()
     shares = list(ta.columns)
     shares.remove('Date')
     shares.remove('Acct Bal')
@@ -378,9 +378,9 @@ def delete_last_row():
     Other changes have to be done manually.
     '''
     backup()
-    ta = pickle.load(open(ta_fname, 'rb'))
+    ta = ta_read()
     ta = ta.drop(ta.index[-1])
-    pickle.dump(ta, open(ta_fname, 'wb'))
+    ta_write(ta)
     print('Backed up trading account and deleted last row.')
 
 
@@ -407,13 +407,15 @@ def backup():
     '''Save timestamped dataframe as well as a spreadsheet with the full
     record of trading account activities in a separate folder.
     '''
-    ta = pickle.load(open(ta_fname, 'rb'))
+    ta = ta_read()
     d = pd.Timestamp('now').strftime("%y-%m-%d")
     if not os.path.isdir('./backups'):
         os.mkdir('./backups')
         print('Created folder for backups.')
     name = './backups/' + ta_fname.split('_')[0] + '_' + d
-    pickle.dump(ta, open(name + '.p', 'wb'))
+    backup_file = open(name + '.p', 'wb')
+    pickle.dump(ta, backup_file)
+    backup_file.close()
     writer = pd.ExcelWriter(name + '.xlsx', engine='xlsxwriter')
     ta = shr_values(all_shares=True, comments=True, date_as_string=True)
     ta.to_excel(writer, sheet_name='Trading Account ' + d)
@@ -432,7 +434,9 @@ def account_name(*acct_name):
                                     one in the first position.
     '''
     try:
-        names = pickle.load(open('account_names.p', 'rb'))
+        names_file = open('account_names.p', 'rb')
+        names = pickle.load(names_file)
+        names_file.close()
     except FileNotFoundError:
         print('No file with account names found. Created new one.')
         if acct_name:
@@ -441,7 +445,9 @@ def account_name(*acct_name):
         else:
             names = ['ta']
             print('with default account name, ta.')
-        pickle.dump(names, open('account_names.p', 'wb'))
+        names_file = open('account_names.p', 'wb')
+        pickle.dump(names, names_file)
+        names_file.close()
     else:
         if acct_name:
             name = acct_name[0]
@@ -452,7 +458,9 @@ def account_name(*acct_name):
             else:
                 names.insert(0, name)
                 print('Switched to new account, '+names[0]+'.')
-            pickle.dump(names, open('account_names.p', 'wb'))
+            names_file = open('account_names.p', 'wb')
+            pickle.dump(names, names_file)
+            names_file.close()
     global ta_fname
     ta_fname = names[0]+'_save.p'
     if not os.path.isfile(ta_fname):
@@ -461,6 +469,19 @@ def account_name(*acct_name):
         print('passing the opening deposit amount as an argument. Calling')
         print('any other methods before doing that will cause errors.')
     return names
+
+
+def ta_write(ta):
+    ta_file = open(ta_fname, 'wb')
+    pickle.dump(ta, ta_file)
+    ta_file.close()
+
+
+def ta_read():
+    ta_file = open(ta_fname, 'rb')
+    ta = pickle.load(ta_file)
+    ta_file.close()
+    return ta
 
 
 # 5: other tools
