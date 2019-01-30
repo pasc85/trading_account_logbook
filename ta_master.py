@@ -607,6 +607,13 @@ def find_mu_sigma(data=[]):
     return [mu, sigma]
 
 
+def check_watchlist():
+    '''Check whether stocks in watchlist are below given values.'''
+    cwl = open('./cwl.py')
+    exec(cwl.read())
+    cwl.close()
+
+
 # 6: constants
 # trading fee (approximate value that will be used to compute the relative
 # values -- exact fee will be implicitly logged when selling)
