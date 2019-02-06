@@ -629,17 +629,18 @@ def get_update_dict():
     if os.path.isfile(dict_file_name):
         stock_dict_file = open(dict_file_name, 'r')
         for line in stock_dict_file:
-            temp_list = line.strip().split(' ')
-            TA_name = temp_list[0]
-            YF_name = temp_list[1]
-            n_stock = int(temp_list[2])
-            source = "https://finance.yahoo.com/quote/"+YF_name
-            filehandle = urllib.request.urlopen(source)
-            soup = BeautifulSoup(filehandle.read(), "html.parser")
-            priceSpan = soup.findAll("span", {"class": "Fz(36px)"})
-            for elt in priceSpan:
-                curr_pr = float(elt.getText())
-            update_dict[TA_name] = n_stock * curr_pr
+            if line.strip():
+                temp_list = line.strip().split(' ')
+                TA_name = temp_list[0]
+                YF_name = temp_list[1]
+                n_stock = int(temp_list[2])
+                source = "https://finance.yahoo.com/quote/"+YF_name
+                filehandle = urllib.request.urlopen(source)
+                soup = BeautifulSoup(filehandle.read(), "html.parser")
+                priceSpan = soup.findAll("span", {"class": "Fz(36px)"})
+                for elt in priceSpan:
+                    curr_pr = float(elt.getText())
+                update_dict[TA_name] = n_stock * curr_pr
         stock_dict_file.close()
     else:
         print('File containing dictionary of stocks in the portfolio')
