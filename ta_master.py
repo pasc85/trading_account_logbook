@@ -540,11 +540,16 @@ def simulate_p(mu, sigma, begweek=12, endweek=52, **kwargs):
     b = begweek-1
     maxima = np.zeros((2, N))
     for k in range(N):
-        g = sigma*np.random.randn(n) + mu
-        v = np.cumprod(g)
+        if sigma == 0:
+            sigma = 0.00000001    
+        ls = sigma*np.random.randn(n) + mu
+        lv = list(np.cumsum(ls))
+        lv.insert(0, 0)
+        v = list(map(lambda t: math.exp(t), lv))
+        v.pop(0)
         p = np.zeros(n-b)
         for i in range(b, n):
-            p[i-b] = math.log(v[i])*52/float(i+1)
+            p[i-b] = math.log(v[i])*52/float(i)
         maxima[0, k] = np.max(p)
         maxima[1, k] = np.argmax(p)+b+1
     ordered = np.sort(maxima[0, :])
@@ -584,10 +589,10 @@ def simulate_p(mu, sigma, begweek=12, endweek=52, **kwargs):
 
 
 def find_mu_sigma(data=[]):
-    '''Find mu and sigma for the method 'simulate_p' from a data column of
+    '''Find mean logreturn and its standard deviation from a data column of
     weekly share prices. This data can be passed as an argument or must be
-    saved in a file called 'data.csv' in the working directory. In the latter
-    case, the data will be taken from a column called 'Close'.
+    saved in a file called 'data.csv' in the working directory (downloaded
+    from Yahoo Finance).
 
     Optional arguments:
     data -- list of weekly stock prices
@@ -604,12 +609,12 @@ def find_mu_sigma(data=[]):
             d = d.dropna(how='any')
             d = d.reset_index()
             v = d.Close
-    growth_factors = []
+    log_returns = []
     for k in range(1, len(v)):
-        growth_factors.append(float(v[k])/float(v[k-1]))
-    growth_factors = np.asarray(growth_factors)
-    mu = growth_factors.mean()
-    sigma = growth_factors.std()
+        log_returns.append(math.log(float(v[k])/float(v[k-1])))
+    log_returns = np.asarray(log_returns)
+    mu = log_returns.mean()
+    sigma = log_returns.std()
     return [mu, sigma]
 
 
