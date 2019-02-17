@@ -541,7 +541,7 @@ def simulate_p(mu, sigma, begweek=12, endweek=52, **kwargs):
     maxima = np.zeros((2, N))
     for k in range(N):
         if sigma == 0:
-            sigma = 0.00000001    
+            sigma = 0.00000001
         ls = sigma*np.random.randn(n) + mu
         lv = list(np.cumsum(ls))
         lv.insert(0, 0)
@@ -656,7 +656,7 @@ def get_update_dict():
 # 6: constants
 # trading fee (approximate value that will be used to compute the relative
 # values -- exact fee will be implicitly logged when selling)
-s_fee = 10
+s_fee = 15
 # zero_value to pad inactive shares or new ones
 zero_value = ShareValue(0, 0)
 # initialise (set name of trading account to be used)
